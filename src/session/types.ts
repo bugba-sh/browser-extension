@@ -56,8 +56,16 @@ export type RuntimeMessage =
       type: "bugbash:get-action-control-state"
     }
   | {
+      type: "bugbash:open-create-session-page"
+      jiraOrg: string
+      jiraIssueKey: string
+    }
+  | {
       type: "bugbash:open-side-panel"
       tabId?: number
+    }
+  | {
+      type: "bugbash:open-home"
     }
   | {
       type: "bugbash:resume-session"

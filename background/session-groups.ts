@@ -1,4 +1,11 @@
 import {
+  getRecentSessions,
+  getSessionByGroupId,
+  removeSessionByGroupId,
+  saveRecentSessions,
+  saveSession
+} from "~src/session/storage"
+import {
   BUGBASH_GROUP_COLOR,
   BUGBASH_GROUP_TITLE_PREFIX,
   BUGBASH_WEB_URL,
@@ -8,13 +15,6 @@ import {
   type RuntimeMessage,
   type RuntimeResponse
 } from "~src/session/types"
-import {
-  getRecentSessions,
-  getSessionByGroupId,
-  removeSessionByGroupId,
-  saveRecentSessions,
-  saveSession
-} from "~src/session/storage"
 
 function createSessionId(jiraOrg: string, jiraIssueKey: string): string {
   return `${jiraOrg}:${jiraIssueKey}:${Date.now()}`
@@ -115,6 +115,19 @@ async function getActionControlState(): Promise<ActionControlState> {
   }
 }
 
+async function openCreateSessionPage(
+  message: Extract<RuntimeMessage, { type: "bugbash:open-create-session-page" }>
+): Promise<void> {
+  const url = new URL(chrome.runtime.getURL("tabs/create-session.html"))
+  url.searchParams.set("jiraOrg", message.jiraOrg)
+  url.searchParams.set("jiraIssueKey", message.jiraIssueKey)
+
+  await chrome.tabs.create({
+    url: url.toString(),
+    active: true
+  })
+}
+
 async function resumeSession(sessionId: string): Promise<RecentSession> {
   const recentSessions = await getRecentSessions()
   const session = recentSessions.find((item) => item.id === sessionId)
@@ -175,7 +188,9 @@ async function endSession(sessionId: string): Promise<void> {
   if (session?.tabGroupId) {
     await removeSessionByGroupId(session.tabGroupId)
   }
-  await saveRecentSessions(recentSessions.filter((item) => item.id !== sessionId))
+  await saveRecentSessions(
+    recentSessions.filter((item) => item.id !== sessionId)
+  )
   await updateBadgeForTab()
 }
 
@@ -190,8 +205,14 @@ export async function handleRuntimeMessage(
         return { ok: true, value: await getTabSession(message.tabId) }
       case "bugbash:get-action-control-state":
         return { ok: true, value: await getActionControlState() }
+      case "bugbash:open-create-session-page":
+        await openCreateSessionPage(message)
+        return { ok: true, value: null }
       case "bugbash:open-side-panel":
         await openSidePanel(message.tabId)
+        return { ok: true, value: null }
+      case "bugbash:open-home":
+        await openBugbashHome()
         return { ok: true, value: null }
       case "bugbash:resume-session":
         return { ok: true, value: await resumeSession(message.sessionId) }

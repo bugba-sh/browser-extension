@@ -8,7 +8,7 @@ Chrome-first MV3 prototype for validating BugBash browser-native review sessions
 - The extension injects a `Start BugBash` action into the Jira issue action area.
 - The setup page asks for the review URL.
 - The extension opens the review URL in a Chrome tab group.
-- The popup, side panel, badge, and overlay resolve state from the tab group session mapping.
+- The side panel, badge, and overlay resolve state from the tab group session mapping.
 
 ## Development
 
@@ -31,9 +31,9 @@ Manual checks:
 - Confirm the BugBash button appears near the Jira issue action area.
 - Click it and enter a review URL.
 - Confirm the review URL opens inside a `BugBash <ISSUE-KEY>` Chrome tab group.
-- Confirm the extension popup shows the active session inside the grouped tab.
-- Confirm the side panel opens from the popup.
+- Confirm the extension action opens the side panel.
+- Confirm the side panel shows the active session inside the grouped tab.
 - Confirm the overlay appears only inside grouped review tabs.
 - Confirm tabs outside the group do not show the overlay.
-- Confirm the popup shows recent sessions outside an active session.
+- Confirm the side panel shows recent sessions outside an active session.
 - Confirm the no-session start path opens `https://bugba.sh`.

@@ -5,10 +5,14 @@ import {
 } from "~background/session-groups"
 import type { RuntimeMessage } from "~src/session/types"
 
-chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResponse) => {
-  void handleRuntimeMessage(message).then(sendResponse)
-  return true
-})
+chrome.runtime.onMessage.addListener(
+  (message: RuntimeMessage, _sender, sendResponse) => {
+    void handleRuntimeMessage(message).then(sendResponse)
+    return true
+  }
+)
+
+void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 
 chrome.tabs.onActivated.addListener(() => {
   void refreshActiveTabBadge()
@@ -29,4 +33,5 @@ chrome.runtime.onInstalled.addListener(() => {
     path: "sidepanel.html",
     enabled: true
   })
+  void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 })

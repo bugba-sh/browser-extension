@@ -1,20 +1,15 @@
 import { useMemo } from "react"
 
-import {
-  hasJiraIssueContext,
-  resolveJiraIssueContext
-} from "~src/session/jira"
+import { hasJiraIssueContext, resolveJiraIssueContext } from "~src/session/jira"
 import type { JiraIssueContext } from "~src/session/types"
 
 import styles from "./JiraIssueLauncher.module.css"
 
 export interface JiraIssueLauncherProps {
-  getCreateSessionUrl: (params: JiraIssueContext) => string
+  onStartSession: (params: JiraIssueContext) => void
 }
 
-export function JiraIssueLauncher({
-  getCreateSessionUrl
-}: JiraIssueLauncherProps) {
+export function JiraIssueLauncher({ onStartSession }: JiraIssueLauncherProps) {
   const jiraIssue = useMemo(
     () => resolveJiraIssueContext(window.location.href),
     []
@@ -26,14 +21,10 @@ export function JiraIssueLauncher({
       return
     }
 
-    window.open(
-      getCreateSessionUrl({
-        jiraOrg: jiraIssue.jiraOrg,
-        jiraIssueKey: jiraIssue.jiraIssueKey
-      }),
-      "_blank",
-      "noopener,noreferrer"
-    )
+    onStartSession({
+      jiraOrg: jiraIssue.jiraOrg,
+      jiraIssueKey: jiraIssue.jiraIssueKey
+    })
   }
 
   return (

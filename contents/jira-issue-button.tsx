@@ -1,6 +1,7 @@
 import type { PlasmoCSConfig, PlasmoGetInlineAnchor } from "plasmo"
 
 import { JiraIssueLauncher } from "~src/features/jira/JiraIssueLauncher"
+import { sendRuntimeMessage } from "~src/session/messages"
 import type { JiraIssueContext } from "~src/session/types"
 
 const JIRA_ACTION_ANCHOR_SELECTOR =
@@ -18,13 +19,14 @@ export const getInlineAnchor: PlasmoGetInlineAnchor = async () => ({
   insertPosition: "afterend"
 })
 
-function getCreateSessionUrl(params: JiraIssueContext): string {
-  const url = new URL(chrome.runtime.getURL("tabs/create-session.html"))
-  url.searchParams.set("jiraOrg", params.jiraOrg)
-  url.searchParams.set("jiraIssueKey", params.jiraIssueKey)
-  return url.toString()
+function openCreateSessionPage(params: JiraIssueContext): void {
+  void sendRuntimeMessage({
+    type: "bugbash:open-create-session-page",
+    jiraOrg: params.jiraOrg,
+    jiraIssueKey: params.jiraIssueKey
+  })
 }
 
 export default function JiraIssueButton() {
-  return <JiraIssueLauncher getCreateSessionUrl={getCreateSessionUrl} />
+  return <JiraIssueLauncher onStartSession={openCreateSessionPage} />
 }
