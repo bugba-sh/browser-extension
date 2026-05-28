@@ -1,0 +1,32 @@
+.bugbash--session-panel {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 16px;
+  color: #d7f8e4;
+  background: #07140f;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.bugbash--session-panel__title {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+.bugbash--session-panel__stack {
+  display: grid;
+  gap: 10px;
+}
+
+.bugbash--session-panel__muted {
+  color: #88aa98;
+}
+
+.bugbash--session-panel__button {
+  padding: 8px 10px;
+  border: 1px solid #375f49;
+  border-radius: 6px;
+  color: #d7f8e4;
+  background: #10241a;
+  font: inherit;
+  cursor: pointer;
+}
