@@ -24,7 +24,7 @@ export function SessionCreatePage() {
     setError("")
 
     const normalizedUrl = normalizeReviewUrl(targetUrl)
-    if (!normalizedUrl.ok) {
+    if (normalizedUrl.ok === false) {
       setError(normalizedUrl.error)
       return
     }
@@ -43,7 +43,7 @@ export function SessionCreatePage() {
     })
     setIsSubmitting(false)
 
-    if (!response.ok) {
+    if (response.ok === false) {
       setError(response.error)
       return
     }

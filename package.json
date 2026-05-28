@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "plasmo dev --src-path=.",
     "build": "plasmo build --src-path=.",
-    "package": "plasmo package --src-path=."
+    "package": "plasmo package --src-path=.",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "plasmo": "0.90.5",

@@ -25,10 +25,10 @@ export function SessionControlSurface() {
         return
       }
 
-      if (response.ok) {
-        setState(response.value)
-      } else {
+      if (response.ok === false) {
         setError(response.error)
+      } else {
+        setState(response.value)
       }
     }
 
@@ -41,7 +41,7 @@ export function SessionControlSurface() {
 
   async function runAction(action: Promise<RuntimeResponse>) {
     const response = await action
-    if (!response.ok) {
+    if (response.ok === false) {
       setError(response.error)
     }
   }
