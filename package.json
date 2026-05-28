@@ -24,8 +24,15 @@
     "typescript": "5.3.3"
   },
   "manifest": {
+    "permissions": [
+      "activeTab",
+      "tabs",
+      "tabGroups",
+      "sidePanel",
+      "storage"
+    ],
     "host_permissions": [
-      "https://*/*"
+      "https://*.atlassian.net/*"
     ]
   }
 }
