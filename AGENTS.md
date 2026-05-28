@@ -15,6 +15,22 @@ Private planning docs may be available at:
 ../docs/browser-extension/
 ```
 
+When using Superpowers from this subdirectory, keep planning artifacts in the
+private parent workspace:
+
+```text
+../docs/browser-extension/docs/superpowers/specs/
+../docs/browser-extension/docs/superpowers/plans/
+```
+
+For new feature work, prefer this flow:
+
+1. Start the chat from this `browser-extension` repository.
+2. Read this file, then read the parent workspace instructions above.
+3. Use Superpowers brainstorming and planning skills as needed.
+4. Save specs and plans to the private parent paths listed above.
+5. Implement and commit code changes only in this public repository.
+
 Use those private docs as implementation guidance only. Do not copy private docs,
 private planning notes, local absolute paths, credentials, personal details, or
 workspace-specific metadata into this public repository.
