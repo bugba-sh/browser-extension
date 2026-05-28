@@ -5,9 +5,9 @@
   "description": "Instant team feedback sessions",
   "author": "Jimmy Loughran <hello@jim.ie>",
   "scripts": {
-    "dev": "plasmo dev",
-    "build": "plasmo build",
-    "package": "plasmo package"
+    "dev": "plasmo dev --src-path=.",
+    "build": "plasmo build --src-path=.",
+    "package": "plasmo package --src-path=."
   },
   "dependencies": {
     "plasmo": "0.90.5",
