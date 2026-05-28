@@ -2,16 +2,9 @@
   display: inline-flex;
   align-items: center;
   min-height: 32px;
-  padding: 0 10px;
-  border: 1px solid #6ee7a2;
-  border-radius: 6px;
-  color: #06391e;
-  background: #d9fbe7;
-  font: 500 14px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   cursor: pointer;
 }
 
 .bugbash--jira-issue-launcher:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
 }
