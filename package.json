@@ -1,13 +1,14 @@
 {
-  "name": "bugba.sh",
-  "displayName": "bugba.sh",
+  "name": "bugbash",
+  "displayName": "Bugbash",
   "version": "0.0.1",
   "description": "Instant team feedback sessions",
   "author": "Jimmy Loughran <hello@jim.ie>",
   "scripts": {
-    "dev": "plasmo dev",
-    "build": "plasmo build",
-    "package": "plasmo package"
+    "dev": "plasmo dev --src-path=.",
+    "build": "plasmo build --src-path=.",
+    "package": "plasmo package --src-path=.",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "plasmo": "0.90.5",
@@ -24,8 +25,15 @@
     "typescript": "5.3.3"
   },
   "manifest": {
+    "permissions": [
+      "activeTab",
+      "tabs",
+      "tabGroups",
+      "sidePanel",
+      "storage"
+    ],
     "host_permissions": [
-      "https://*/*"
+      "https://*.atlassian.net/*"
     ]
   }
 }

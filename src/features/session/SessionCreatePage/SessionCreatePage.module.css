@@ -1,0 +1,44 @@
+.bugbash--session-create {
+  box-sizing: border-box;
+  min-width: 360px;
+  max-width: 640px;
+  margin: 48px auto;
+  padding: 24px;
+}
+
+.bugbash--session-create__heading {
+  /* Heading hook for the setup page title. */
+  margin: 0 0 8px;
+}
+
+.bugbash--session-create__meta {
+  /* Metadata hook for the Jira issue context line. */
+  margin: 0 0 24px;
+}
+
+.bugbash--session-create__form {
+  display: grid;
+  gap: 12px;
+}
+
+.bugbash--session-create__label {
+  /* Label hook for the review URL input. */
+}
+
+.bugbash--session-create__input {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.bugbash--session-create__button {
+  width: fit-content;
+  cursor: pointer;
+}
+
+.bugbash--session-create__button:disabled {
+  cursor: not-allowed;
+}
+
+.bugbash--session-create__error {
+  /* Error message hook for URL validation and runtime failures. */
+}

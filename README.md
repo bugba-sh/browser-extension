@@ -1,33 +1,39 @@
-This is a [Plasmo extension](https://docs.plasmo.com/) project bootstrapped with [`plasmo init`](https://www.npmjs.com/package/plasmo).
+# BugBash Browser Extension
 
-## Getting Started
+Chrome-first MV3 prototype for validating BugBash browser-native review sessions.
 
-First, run the development server:
+## V1 Runtime
+
+- Start from an existing Jira issue.
+- The extension injects a `Start BugBash` action into the Jira issue action area.
+- The setup page asks for the review URL.
+- The extension opens the review URL in a Chrome tab group.
+- The side panel, badge, and overlay resolve state from the tab group session mapping.
+
+## Development
 
 ```bash
+pnpm install
 pnpm dev
-# or
-npm run dev
 ```
 
-Open your browser and load the appropriate development build. For example, if you are developing for the chrome browser, using manifest v3, use: `build/chrome-mv3-dev`.
+Load the Chrome MV3 dev build from `build/chrome-mv3-dev`.
 
-You can start editing the popup by modifying `popup.tsx`. It should auto-update as you make changes. To add an options page, simply add a `options.tsx` file to the root of the project, with a react component default exported. Likewise to add a content page, add a `content.ts` file to the root of the project, importing some module and do some logic, then reload the extension on your browser.
-
-For further guidance, [visit our Documentation](https://docs.plasmo.com/)
-
-## Making production build
-
-Run the following:
+## Verification
 
 ```bash
 pnpm build
-# or
-npm run build
 ```
 
-This should create a production bundle for your extension, ready to be zipped and published to the stores.
+Manual checks:
 
-## Submit to the webstores
-
-The easiest way to deploy your Plasmo extension is to use the built-in [bpp](https://bpp.browser.market) GitHub action. Prior to using this action however, make sure to build your extension and upload the first version to the store to establish the basic credentials. Then, simply follow [this setup instruction](https://docs.plasmo.com/framework/workflows/submit) and you should be on your way for automated submission!
+- Open a Jira issue on `https://*.atlassian.net/*`.
+- Confirm the BugBash button appears near the Jira issue action area.
+- Click it and enter a review URL.
+- Confirm the review URL opens inside a `BugBash <ISSUE-KEY>` Chrome tab group.
+- Confirm the extension action opens the side panel.
+- Confirm the side panel shows the active session inside the grouped tab.
+- Confirm the overlay appears only inside grouped review tabs.
+- Confirm tabs outside the group do not show the overlay.
+- Confirm the side panel shows recent sessions outside an active session.
+- Confirm the no-session start path opens `https://bugba.sh`.

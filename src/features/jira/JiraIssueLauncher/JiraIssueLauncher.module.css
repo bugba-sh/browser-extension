@@ -1,0 +1,10 @@
+.bugbash--jira-issue-launcher {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  cursor: pointer;
+}
+
+.bugbash--jira-issue-launcher:disabled {
+  cursor: not-allowed;
+}

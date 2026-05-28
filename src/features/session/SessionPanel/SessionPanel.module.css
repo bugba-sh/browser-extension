@@ -1,0 +1,23 @@
+.bugbash--session-panel {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 16px;
+}
+
+.bugbash--session-panel__title {
+  /* Title hook for the side panel. */
+  margin: 0 0 16px;
+}
+
+.bugbash--session-panel__stack {
+  display: grid;
+  gap: 10px;
+}
+
+.bugbash--session-panel__muted {
+  /* Secondary text hook for less prominent panel content. */
+}
+
+.bugbash--session-panel__button {
+  cursor: pointer;
+}
