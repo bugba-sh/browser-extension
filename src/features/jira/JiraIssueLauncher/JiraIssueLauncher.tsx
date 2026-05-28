@@ -4,20 +4,17 @@ import {
   hasJiraIssueContext,
   resolveJiraIssueContext
 } from "~src/session/jira"
+import type { JiraIssueContext } from "~src/session/types"
 
 import styles from "./JiraIssueLauncher.module.css"
 
-function getCreateSessionUrl(params: {
-  jiraOrg: string
-  jiraIssueKey: string
-}): string {
-  const url = new URL(chrome.runtime.getURL("tabs/create-session.html"))
-  url.searchParams.set("jiraOrg", params.jiraOrg)
-  url.searchParams.set("jiraIssueKey", params.jiraIssueKey)
-  return url.toString()
+export interface JiraIssueLauncherProps {
+  getCreateSessionUrl: (params: JiraIssueContext) => string
 }
 
-export function JiraIssueLauncher() {
+export function JiraIssueLauncher({
+  getCreateSessionUrl
+}: JiraIssueLauncherProps) {
   const jiraIssue = useMemo(
     () => resolveJiraIssueContext(window.location.href),
     []

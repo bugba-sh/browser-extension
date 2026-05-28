@@ -1,6 +1,6 @@
 {
-  "name": "bugba-sh",
-  "displayName": "Bugba sh",
+  "name": "bugbash",
+  "displayName": "Bugbash",
   "version": "0.0.1",
   "description": "Instant team feedback sessions",
   "author": "Jimmy Loughran <hello@jim.ie>",
