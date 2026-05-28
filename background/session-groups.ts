@@ -41,7 +41,7 @@ async function getTabSession(tabId?: number): Promise<BugBashSession | null> {
   const tab = tabId ? await getTab(tabId) : await getActiveTab()
   const groupId = tab?.groupId
 
-  if (!groupId || groupId === -1) {
+  if (groupId === undefined || groupId === chrome.tabGroups.TAB_GROUP_ID_NONE) {
     return null
   }
 
