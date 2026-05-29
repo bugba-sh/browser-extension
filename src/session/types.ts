@@ -1,3 +1,5 @@
+import type { CreatePreviewFeedbackInput } from "./feedback"
+
 export const BUGBASH_WEB_URL = "https://bugba.sh"
 export const BUGBASH_GROUP_TITLE_PREFIX = "BugBash"
 export const BUGBASH_GROUP_COLOR: chrome.tabGroups.ColorEnum = "green"
@@ -66,6 +68,14 @@ export type RuntimeMessage =
     }
   | {
       type: "bugbash:open-home"
+    }
+  | {
+      type: "bugbash:list-preview-feedback"
+      sessionId: string
+    }
+  | {
+      type: "bugbash:create-preview-feedback"
+      feedback: CreatePreviewFeedbackInput
     }
   | {
       type: "bugbash:resume-session"

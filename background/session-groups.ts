@@ -1,4 +1,9 @@
 import {
+  clearPreviewFeedback,
+  createPreviewFeedback,
+  listPreviewFeedback
+} from "~src/session/preview-feedback-storage"
+import {
   getRecentSessions,
   getSessionByGroupId,
   removeSessionByGroupId,
@@ -191,6 +196,7 @@ async function endSession(sessionId: string): Promise<void> {
   await saveRecentSessions(
     recentSessions.filter((item) => item.id !== sessionId)
   )
+  await clearPreviewFeedback(sessionId)
   await updateBadgeForTab()
 }
 
@@ -214,6 +220,16 @@ export async function handleRuntimeMessage(
       case "bugbash:open-home":
         await openBugbashHome()
         return { ok: true, value: null }
+      case "bugbash:list-preview-feedback":
+        return {
+          ok: true,
+          value: await listPreviewFeedback(message.sessionId)
+        }
+      case "bugbash:create-preview-feedback":
+        return {
+          ok: true,
+          value: await createPreviewFeedback(message.feedback)
+        }
       case "bugbash:resume-session":
         return { ok: true, value: await resumeSession(message.sessionId) }
       case "bugbash:end-session":

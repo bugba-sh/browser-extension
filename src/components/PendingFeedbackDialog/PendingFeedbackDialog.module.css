@@ -1,0 +1,35 @@
+.bugbash--pending-feedback {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  display: grid;
+  gap: 8px;
+  min-width: 240px;
+  pointer-events: auto;
+}
+
+.bugbash--pending-feedback__label {
+  display: grid;
+  gap: 4px;
+}
+
+.bugbash--pending-feedback__label-text {
+  /* Text hook for feedback input label. */
+}
+
+.bugbash--pending-feedback__input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+}
+
+.bugbash--pending-feedback__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.bugbash--pending-feedback__error {
+  /* Error message hook for preview submit failures. */
+}
