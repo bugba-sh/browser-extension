@@ -3,6 +3,11 @@ import {
   handleRuntimeMessage,
   refreshActiveTabBadge
 } from "~background/session-groups"
+import {
+  handleDebuggerDetach,
+  handleDebuggerEvent,
+  stopTabCapture
+} from "~background/debugger-capture"
 import type { RuntimeMessage } from "~src/session/types"
 
 chrome.runtime.onMessage.addListener(
@@ -22,6 +27,18 @@ chrome.tabs.onUpdated.addListener((_tabId, changeInfo) => {
   if (changeInfo.status === "complete") {
     void refreshActiveTabBadge()
   }
+})
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  void stopTabCapture(tabId)
+})
+
+chrome.debugger.onEvent.addListener((source, method, params) => {
+  handleDebuggerEvent(source, method, params)
+})
+
+chrome.debugger.onDetach.addListener((source, reason) => {
+  handleDebuggerDetach(source, reason)
 })
 
 chrome.tabGroups.onRemoved.addListener((group) => {

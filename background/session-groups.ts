@@ -3,6 +3,11 @@ import {
   fetchBugbashJiraIssues
 } from "~src/session/jira-api"
 import {
+  getTabCaptureStatus,
+  startTabCapture,
+  stopTabCapture
+} from "~background/debugger-capture"
+import {
   appendCachedJiraIssue,
   getCachedJiraIssues,
   saveCachedJiraIssues
@@ -127,6 +132,7 @@ async function createSession(
   }
 
   await saveSession(session)
+  void startTabCapture(createdTab.id).catch(() => {})
   await updateBadgeForTab(createdTab.id)
   void refreshJiraIssues(session)
     .then(() => updateBadgeForTab(createdTab.id))
@@ -203,6 +209,7 @@ async function resumeSession(sessionId: string): Promise<RecentSession> {
   }
 
   await saveSession(restoredSession)
+  void startTabCapture(createdTab.id).catch(() => {})
   return restoredSession
 }
 
@@ -225,6 +232,15 @@ async function openSidePanel(tabId?: number): Promise<void> {
 async function endSession(sessionId: string): Promise<void> {
   const recentSessions = await getRecentSessions()
   const session = recentSessions.find((item) => item.id === sessionId)
+  if (session?.tabGroupId) {
+    const groupedTabs = await chrome.tabs.query({ groupId: session.tabGroupId })
+    await Promise.all(
+      groupedTabs
+        .map((tab) => tab.id)
+        .filter((tabId): tabId is number => typeof tabId === "number")
+        .map((tabId) => stopTabCapture(tabId))
+    )
+  }
   if (session?.tabGroupId) {
     await removeSessionByGroupId(session.tabGroupId)
   }
@@ -298,6 +314,15 @@ export async function handleRuntimeMessage(
         return { ok: true, value: await getTabSession(message.tabId) }
       case "bugbash:get-action-control-state":
         return { ok: true, value: await getActionControlState() }
+      case "bugbash:get-capture-status": {
+        const tab = message.tabId
+          ? await getTab(message.tabId)
+          : await getActiveTab()
+        return {
+          ok: true,
+          value: getTabCaptureStatus(tab?.id)
+        }
+      }
       case "bugbash:open-create-session-page":
         await openCreateSessionPage(message)
         return { ok: true, value: null }
