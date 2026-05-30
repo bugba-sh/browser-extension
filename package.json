@@ -8,7 +8,8 @@
     "dev": "plasmo dev --src-path=.",
     "build": "plasmo build --src-path=.",
     "package": "plasmo package --src-path=.",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --import tsx \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@medv/finder": "^4.0.2",
@@ -23,6 +24,7 @@
     "@types/react": "18.2.48",
     "@types/react-dom": "18.2.18",
     "prettier": "3.2.4",
+    "tsx": "^4.19.2",
     "typescript": "5.3.3"
   },
   "manifest": {
@@ -31,7 +33,8 @@
       "tabs",
       "tabGroups",
       "sidePanel",
-      "storage"
+      "storage",
+      "debugger"
     ],
     "host_permissions": [
       "https://*.atlassian.net/*"

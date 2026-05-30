@@ -58,6 +58,10 @@ export type RuntimeMessage =
       type: "bugbash:get-action-control-state"
     }
   | {
+      type: "bugbash:get-capture-status"
+      tabId?: number
+    }
+  | {
       type: "bugbash:open-create-session-page"
       jiraOrg: string
       jiraIssueKey: string
@@ -68,6 +72,13 @@ export type RuntimeMessage =
     }
   | {
       type: "bugbash:open-home"
+    }
+  | {
+      type: "bugbash:capture-visible-tab"
+      marker: {
+        clientX: number
+        clientY: number
+      }
     }
   | {
       type: "bugbash:list-preview-feedback"
