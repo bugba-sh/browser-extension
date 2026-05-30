@@ -28,6 +28,8 @@ import {
   type BugBashJiraIssue
 } from "~src/session/jira-issues"
 import { sendRuntimeMessage } from "~src/session/messages"
+import { collectPageMetadata } from "~src/session/page-metadata"
+import { captureAnnotatedScreenshot } from "~src/session/screenshot"
 import type { BugBashSession } from "~src/session/types"
 
 import styles from "./SessionOverlay.module.css"
@@ -356,6 +358,40 @@ export function SessionOverlay() {
     setIsSubmitting(true)
     setSubmitError("")
 
+    const { page, browser } = collectPageMetadata()
+    let screenshotDataUrl: string | undefined
+
+    if (pendingPoint) {
+      try {
+        screenshotDataUrl = await captureAnnotatedScreenshot({
+          marker: {
+            clientX: pendingPoint.x,
+            clientY: pendingPoint.y
+          },
+          hiddenSelector:
+            "[data-bugbash-session-overlay], [data-bugbash-annotation-host]",
+          hiddenElements: [pendingDialogRef.current],
+          captureVisibleTab: async () => {
+            const screenshotResponse = await sendRuntimeMessage<string>({
+              type: "bugbash:capture-visible-tab",
+              marker: {
+                clientX: pendingPoint.x,
+                clientY: pendingPoint.y
+              }
+            })
+
+            if (screenshotResponse.ok === false) {
+              throw new Error(screenshotResponse.error)
+            }
+
+            return screenshotResponse.value
+          }
+        })
+      } catch {
+        screenshotDataUrl = undefined
+      }
+    }
+
     const response = await sendRuntimeMessage<BugBashJiraIssue>({
       type: "bugbash:create-jira-issue",
       jiraOrg: session.jiraOrg,
@@ -366,7 +402,10 @@ export function SessionOverlay() {
         xPercent: pendingAnnotation.xPercent,
         yPercent: pendingAnnotation.yPercent,
         pageUrl: window.location.href
-      }
+      },
+      page,
+      browser,
+      ...(screenshotDataUrl ? { screenshotDataUrl } : {})
     })
 
     if (response.ok === false) {

@@ -1,4 +1,5 @@
 import type { CreatePreviewFeedbackInput, FeedbackAnnotation } from "./feedback"
+import type { BrowserMetadata, PageMetadata } from "./telemetry"
 
 export const BUGBASH_WEB_URL = "https://bugba.sh"
 export const BUGBASH_GROUP_TITLE_PREFIX = "BugBash"
@@ -100,6 +101,9 @@ export type RuntimeMessage =
       jiraIssueKey: string
       summary: string
       annotation: FeedbackAnnotation
+      page: PageMetadata
+      browser: BrowserMetadata
+      screenshotDataUrl?: string
     }
   | {
       type: "bugbash:resume-session"
