@@ -26,6 +26,23 @@
   cursor: pointer;
 }
 
+.bugbash--session-panel__jira-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bugbash--session-panel__jira-item {
+  display: block;
+}
+
+.bugbash--session-panel__jira-link {
+  display: grid;
+  gap: 4px;
+}
+
 .bugbash--session-panel__feedback-list {
   display: grid;
   gap: 8px;

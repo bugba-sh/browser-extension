@@ -23,6 +23,10 @@ import {
   isFeedbackVisibleOnPage,
   type FeedbackItem
 } from "~src/session/feedback"
+import {
+  jiraIssueToFeedbackItem,
+  type BugBashJiraIssue
+} from "~src/session/jira-issues"
 import { sendRuntimeMessage } from "~src/session/messages"
 import type { BugBashSession } from "~src/session/types"
 
@@ -139,20 +143,39 @@ export function SessionOverlay() {
     let cancelled = false
 
     async function loadFeedback() {
-      const response = await sendRuntimeMessage<FeedbackItem[]>({
-        type: "bugbash:list-preview-feedback",
-        sessionId: session.id
-      })
+      const [previewResponse, jiraResponse] = await Promise.all([
+        sendRuntimeMessage<FeedbackItem[]>({
+          type: "bugbash:list-preview-feedback",
+          sessionId: session.id
+        }),
+        sendRuntimeMessage<BugBashJiraIssue[]>({
+          type: "bugbash:list-jira-issues",
+          jiraOrg: session.jiraOrg,
+          jiraIssueKey: session.jiraIssueKey
+        })
+      ])
 
-      if (!cancelled && response.ok) {
-        setFeedbackItems(response.value)
+      if (!cancelled) {
+        const previewFeedback = previewResponse.ok ? previewResponse.value : []
+        const jiraFeedback = jiraResponse.ok
+          ? jiraResponse.value.map((issue) =>
+              jiraIssueToFeedbackItem(session.id, issue)
+            )
+          : []
+
+        setFeedbackItems([...jiraFeedback, ...previewFeedback])
       }
     }
 
     void loadFeedback()
+    const handleStorageChange = () => {
+      void loadFeedback()
+    }
+    chrome.storage.onChanged.addListener(handleStorageChange)
 
     return () => {
       cancelled = true
+      chrome.storage.onChanged.removeListener(handleStorageChange)
     }
   }, [session])
 
@@ -333,17 +356,16 @@ export function SessionOverlay() {
     setIsSubmitting(true)
     setSubmitError("")
 
-    const response = await sendRuntimeMessage<FeedbackItem>({
-      type: "bugbash:create-preview-feedback",
-      feedback: {
-        sessionId: session.id,
-        summary: trimmedSummary,
-        annotation: {
-          selector: pendingAnnotation.selector,
-          xPercent: pendingAnnotation.xPercent,
-          yPercent: pendingAnnotation.yPercent,
-          pageUrl: window.location.href
-        }
+    const response = await sendRuntimeMessage<BugBashJiraIssue>({
+      type: "bugbash:create-jira-issue",
+      jiraOrg: session.jiraOrg,
+      jiraIssueKey: session.jiraIssueKey,
+      summary: trimmedSummary,
+      annotation: {
+        selector: pendingAnnotation.selector,
+        xPercent: pendingAnnotation.xPercent,
+        yPercent: pendingAnnotation.yPercent,
+        pageUrl: window.location.href
       }
     })
 
@@ -353,7 +375,10 @@ export function SessionOverlay() {
       return
     }
 
-    setFeedbackItems((current) => [...current, response.value])
+    setFeedbackItems((current) => [
+      jiraIssueToFeedbackItem(session.id, response.value),
+      ...current
+    ])
     exitAnnotationMode()
   }
 

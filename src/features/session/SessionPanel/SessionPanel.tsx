@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 
 import type { FeedbackItem } from "~src/session/feedback"
+import type { BugBashJiraIssue } from "~src/session/jira-issues"
 import { sendRuntimeMessage } from "~src/session/messages"
 import type { ActionControlState } from "~src/session/types"
 
@@ -9,6 +10,7 @@ import styles from "./SessionPanel.module.css"
 export function SessionPanel() {
   const [state, setState] = useState<ActionControlState | null>(null)
   const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([])
+  const [jiraIssues, setJiraIssues] = useState<BugBashJiraIssue[]>([])
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(
     null
   )
@@ -34,16 +36,27 @@ export function SessionPanel() {
         setError("")
 
         if (response.value.kind === "active-session") {
-          const feedbackResponse = await sendRuntimeMessage<FeedbackItem[]>({
-            type: "bugbash:list-preview-feedback",
-            sessionId: response.value.session.id
-          })
+          const [feedbackResponse, jiraIssuesResponse] = await Promise.all([
+            sendRuntimeMessage<FeedbackItem[]>({
+              type: "bugbash:list-preview-feedback",
+              sessionId: response.value.session.id
+            }),
+            sendRuntimeMessage<BugBashJiraIssue[]>({
+              type: "bugbash:list-jira-issues",
+              jiraOrg: response.value.session.jiraOrg,
+              jiraIssueKey: response.value.session.jiraIssueKey
+            })
+          ])
 
           if (!cancelled && feedbackResponse.ok) {
             setFeedbackItems(feedbackResponse.value)
           }
+          if (!cancelled && jiraIssuesResponse.ok) {
+            setJiraIssues(jiraIssuesResponse.value)
+          }
         } else {
           setFeedbackItems([])
+          setJiraIssues([])
           setSelectedFeedbackId(null)
         }
       }
@@ -106,9 +119,28 @@ export function SessionPanel() {
           ) : (
             <>
               <div className={styles["bugbash--session-panel__meta"]}>
-                {feedbackItems.length} feedback item
-                {feedbackItems.length === 1 ? "" : "s"}
+                {jiraIssues.length} Jira issue
+                {jiraIssues.length === 1 ? "" : "s"}
               </div>
+              {jiraIssues.length > 0 ? (
+                <ul className={styles["bugbash--session-panel__jira-list"]}>
+                  {jiraIssues.map((issue) => (
+                    <li
+                      className={styles["bugbash--session-panel__jira-item"]}
+                      key={issue.id}>
+                      <a
+                        className={styles["bugbash--session-panel__jira-link"]}
+                        href={issue.issueUrl}
+                        target="_blank"
+                        rel="noreferrer">
+                        <span>{issue.summary}</span>
+                        <span>{issue.issueKey}</span>
+                        {issue.status ? <span>{issue.status}</span> : null}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
               {feedbackItems.length > 0 ? (
                 <ul className={styles["bugbash--session-panel__feedback-list"]}>
                   {feedbackItems.map((feedback) => (

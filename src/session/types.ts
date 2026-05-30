@@ -1,4 +1,4 @@
-import type { CreatePreviewFeedbackInput } from "./feedback"
+import type { CreatePreviewFeedbackInput, FeedbackAnnotation } from "./feedback"
 
 export const BUGBASH_WEB_URL = "https://bugba.sh"
 export const BUGBASH_GROUP_TITLE_PREFIX = "BugBash"
@@ -76,6 +76,19 @@ export type RuntimeMessage =
   | {
       type: "bugbash:create-preview-feedback"
       feedback: CreatePreviewFeedbackInput
+    }
+  | {
+      type: "bugbash:list-jira-issues"
+      jiraOrg: string
+      jiraIssueKey: string
+      forceRefresh?: boolean
+    }
+  | {
+      type: "bugbash:create-jira-issue"
+      jiraOrg: string
+      jiraIssueKey: string
+      summary: string
+      annotation: FeedbackAnnotation
     }
   | {
       type: "bugbash:resume-session"

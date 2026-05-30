@@ -1,4 +1,18 @@
 import {
+  createBugbashJiraIssue,
+  fetchBugbashJiraIssues
+} from "~src/session/jira-api"
+import {
+  appendCachedJiraIssue,
+  getCachedJiraIssues,
+  saveCachedJiraIssues
+} from "~src/session/jira-issue-storage"
+import {
+  getActionBadgeTextForIssueCount,
+  isJiraIssueCacheFresh,
+  type BugBashJiraIssue
+} from "~src/session/jira-issues"
+import {
   clearPreviewFeedback,
   createPreviewFeedback,
   listPreviewFeedback
@@ -16,6 +30,7 @@ import {
   BUGBASH_WEB_URL,
   type ActionControlState,
   type BugBashSession,
+  type JiraIssueContext,
   type RecentSession,
   type RuntimeMessage,
   type RuntimeResponse
@@ -58,10 +73,20 @@ async function updateBadgeForTab(tabId?: number): Promise<void> {
   const session = tab?.id ? await getTabSession(tab.id) : null
 
   if (tab?.id) {
+    const cachedIssues = session ? await getCachedJiraIssues(session) : null
+
     await chrome.action.setBadgeText({
       tabId: tab.id,
-      text: session ? "BB" : ""
+      text: session
+        ? getActionBadgeTextForIssueCount(cachedIssues?.issues.length ?? 0)
+        : ""
     })
+
+    if (session && (!cachedIssues || !isJiraIssueCacheFresh(cachedIssues))) {
+      void refreshJiraIssues(session)
+        .then(() => updateBadgeForTab(tab.id))
+        .catch(() => {})
+    }
   } else {
     await chrome.action.setBadgeText({ text: "" })
   }
@@ -103,6 +128,9 @@ async function createSession(
 
   await saveSession(session)
   await updateBadgeForTab(createdTab.id)
+  void refreshJiraIssues(session)
+    .then(() => updateBadgeForTab(createdTab.id))
+    .catch(() => {})
 
   return session
 }
@@ -185,6 +213,13 @@ async function openSidePanel(tabId?: number): Promise<void> {
   }
 
   await chrome.sidePanel.open({ windowId: tab.windowId })
+
+  const session = await getTabSession(tab.id)
+  if (session) {
+    void refreshJiraIssues(session)
+      .then(() => updateBadgeForTab(tab.id))
+      .catch(() => {})
+  }
 }
 
 async function endSession(sessionId: string): Promise<void> {
@@ -198,6 +233,58 @@ async function endSession(sessionId: string): Promise<void> {
   )
   await clearPreviewFeedback(sessionId)
   await updateBadgeForTab()
+}
+
+async function refreshJiraIssues(
+  context: JiraIssueContext
+): Promise<BugBashJiraIssue[]> {
+  const issues = await fetchBugbashJiraIssues(context)
+  await saveCachedJiraIssues(context, issues)
+  return issues
+}
+
+async function listJiraIssues(
+  message: Extract<RuntimeMessage, { type: "bugbash:list-jira-issues" }>
+): Promise<BugBashJiraIssue[]> {
+  const context: JiraIssueContext = {
+    jiraOrg: message.jiraOrg,
+    jiraIssueKey: message.jiraIssueKey
+  }
+  const cached = await getCachedJiraIssues(context)
+
+  if (!message.forceRefresh && cached) {
+    if (!isJiraIssueCacheFresh(cached)) {
+      void refreshJiraIssues(context)
+        .then(() => updateBadgeForTab())
+        .catch(() => {})
+    }
+
+    return cached.issues
+  }
+
+  return refreshJiraIssues(context)
+}
+
+async function createJiraIssue(
+  message: Extract<RuntimeMessage, { type: "bugbash:create-jira-issue" }>
+): Promise<BugBashJiraIssue> {
+  const context: JiraIssueContext = {
+    jiraOrg: message.jiraOrg,
+    jiraIssueKey: message.jiraIssueKey
+  }
+  const issue = await createBugbashJiraIssue({
+    ...context,
+    summary: message.summary,
+    annotation: message.annotation
+  })
+
+  await appendCachedJiraIssue(context, issue)
+  await updateBadgeForTab()
+  void refreshJiraIssues(context)
+    .then(() => updateBadgeForTab())
+    .catch(() => {})
+
+  return issue
 }
 
 export async function handleRuntimeMessage(
@@ -229,6 +316,16 @@ export async function handleRuntimeMessage(
         return {
           ok: true,
           value: await createPreviewFeedback(message.feedback)
+        }
+      case "bugbash:list-jira-issues":
+        return {
+          ok: true,
+          value: await listJiraIssues(message)
+        }
+      case "bugbash:create-jira-issue":
+        return {
+          ok: true,
+          value: await createJiraIssue(message)
         }
       case "bugbash:resume-session":
         return { ok: true, value: await resumeSession(message.sessionId) }
