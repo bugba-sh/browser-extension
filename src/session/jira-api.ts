@@ -9,6 +9,11 @@ import {
   type BugBashJiraIssue,
   type JiraIssueResponse
 } from "./jira-issues"
+import {
+  SCREENSHOT_ATTACHMENT_NAME,
+  TELEMETRY_ATTACHMENT_NAME,
+  type TelemetryArtifact
+} from "./telemetry"
 import type { JiraIssueContext } from "./types"
 
 interface ParentSubtask {
@@ -36,6 +41,29 @@ interface CreateIssueResponse {
   id: string
   key: string
   self: string
+}
+
+interface JiraAttachment {
+  id: string
+  filename: string
+  content: string
+  mimeType?: string
+}
+
+type AdfTextNode = {
+  type: "text"
+  text: string
+}
+
+type AdfParagraph = {
+  type: "paragraph"
+  content: AdfTextNode[]
+}
+
+type AdfDocument = {
+  type: "doc"
+  version: 1
+  content: AdfParagraph[]
 }
 
 export interface CreateBugbashJiraIssueInput extends JiraIssueContext {
@@ -76,6 +104,87 @@ async function fetchJson<T>(url: string, init: RequestInit): Promise<T> {
 
   await assertOk(response, "Jira request failed")
   return (await response.json()) as T
+}
+
+function createTextDocument(lines: string[]): AdfDocument {
+  return {
+    type: "doc",
+    version: 1,
+    content: lines.map((line) => ({
+      type: "paragraph",
+      content: line ? [{ type: "text", text: line }] : []
+    }))
+  }
+}
+
+function dataUrlToBlob(dataUrl: string): Blob {
+  const match = dataUrl.match(/^data:([^;,]+)?(;base64)?,(.*)$/)
+  if (!match) {
+    throw new Error("Failed to decode screenshot data URL.")
+  }
+
+  const [, mimeType = "application/octet-stream", encoding, payload = ""] =
+    match
+  if (encoding !== ";base64") {
+    throw new Error("Screenshot data URL was not base64 encoded.")
+  }
+
+  const binary = atob(payload)
+  const bytes = new Uint8Array(binary.length)
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index)
+  }
+
+  return new Blob([bytes], { type: mimeType })
+}
+
+async function uploadIssueAttachments(
+  jiraOrg: string,
+  jiraIssueKey: string,
+  attachments: Array<{ filename: string; body: Blob }>
+): Promise<JiraAttachment[]> {
+  if (attachments.length === 0) {
+    return []
+  }
+
+  const formData = new FormData()
+  for (const attachment of attachments) {
+    formData.append("file", attachment.body, attachment.filename)
+  }
+
+  const response = await fetch(
+    getIssueApiUrl(jiraOrg, jiraIssueKey, "/attachments"),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        "X-Atlassian-Token": "no-check"
+      },
+      body: formData
+    }
+  )
+
+  await assertOk(response, "Failed to upload Jira attachments")
+  return (await response.json()) as JiraAttachment[]
+}
+
+async function updateIssueFields(
+  jiraOrg: string,
+  jiraIssueKey: string,
+  fields: Record<string, unknown>
+): Promise<void> {
+  const response = await fetch(getIssueApiUrl(jiraOrg, jiraIssueKey), {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ fields })
+  })
+
+  await assertOk(response, "Failed to update Jira issue")
 }
 
 async function getSubtaskIssueTypeId({
@@ -192,4 +301,61 @@ export async function createBugbashJiraIssue({
     summary: trimmedSummary,
     annotation
   }
+}
+
+export async function enrichBugbashJiraIssue({
+  jiraOrg,
+  issueKey,
+  telemetry,
+  screenshotDataUrl
+}: {
+  jiraOrg: string
+  issueKey: string
+  telemetry: TelemetryArtifact
+  screenshotDataUrl?: string
+}): Promise<string[]> {
+  const warnings: string[] = []
+
+  try {
+    const attachments: Array<{ filename: string; body: Blob }> = [
+      {
+        filename: TELEMETRY_ATTACHMENT_NAME,
+        body: new Blob([JSON.stringify(telemetry, null, 2)], {
+          type: "application/json"
+        })
+      }
+    ]
+
+    if (screenshotDataUrl) {
+      attachments.push({
+        filename: SCREENSHOT_ATTACHMENT_NAME,
+        body: dataUrlToBlob(screenshotDataUrl)
+      })
+    }
+
+    await uploadIssueAttachments(jiraOrg, issueKey, attachments)
+  } catch (error) {
+    warnings.push(
+      `Attachments could not be uploaded: ${String((error as Error)?.message ?? error)}`
+    )
+  }
+
+  try {
+    await updateIssueFields(jiraOrg, issueKey, {
+      description: createTextDocument([
+        `BugBash feedback captured on ${telemetry.page.url}`,
+        `Browser: ${telemetry.browser.name} ${telemetry.browser.version}`.trim(),
+        `OS: ${telemetry.browser.os}`,
+        `Viewport: ${telemetry.page.viewport.width}x${telemetry.page.viewport.height}`,
+        `Telemetry events: ${telemetry.timeline.length}`,
+        screenshotDataUrl ? "Screenshot attached." : "Screenshot unavailable."
+      ])
+    })
+  } catch (error) {
+    warnings.push(
+      `Description could not be updated: ${String((error as Error)?.message ?? error)}`
+    )
+  }
+
+  return warnings
 }

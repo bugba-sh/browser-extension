@@ -229,6 +229,23 @@ async function openSidePanel(tabId?: number): Promise<void> {
   }
 }
 
+async function captureVisibleTab(): Promise<string> {
+  const tab = await getActiveTab()
+  if (!tab?.windowId) {
+    throw new Error("No active window is available for screenshot capture.")
+  }
+
+  const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
+    format: "png"
+  })
+
+  if (!dataUrl) {
+    throw new Error("Screenshot capture returned no data.")
+  }
+
+  return dataUrl
+}
+
 async function endSession(sessionId: string): Promise<void> {
   const recentSessions = await getRecentSessions()
   const session = recentSessions.find((item) => item.id === sessionId)
@@ -332,6 +349,11 @@ export async function handleRuntimeMessage(
       case "bugbash:open-home":
         await openBugbashHome()
         return { ok: true, value: null }
+      case "bugbash:capture-visible-tab":
+        return {
+          ok: true,
+          value: await captureVisibleTab()
+        }
       case "bugbash:list-preview-feedback":
         return {
           ok: true,
