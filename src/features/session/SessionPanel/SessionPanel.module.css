@@ -22,6 +22,11 @@
   /* Metadata hook for active session details. */
 }
 
+.bugbash--session-panel__capture-status {
+  display: grid;
+  gap: 0.25rem;
+}
+
 .bugbash--session-panel__button {
   cursor: pointer;
 }

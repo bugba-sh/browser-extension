@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import type { FeedbackItem } from "~src/session/feedback"
 import type { BugBashJiraIssue } from "~src/session/jira-issues"
 import { sendRuntimeMessage } from "~src/session/messages"
+import type { CaptureStatus } from "~src/session/telemetry"
 import type { ActionControlState } from "~src/session/types"
 
 import styles from "./SessionPanel.module.css"
@@ -12,6 +13,9 @@ export function SessionPanel() {
   const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([])
   const [jiraIssues, setJiraIssues] = useState<BugBashJiraIssue[]>([])
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(
+    null
+  )
+  const [captureStatus, setCaptureStatus] = useState<CaptureStatus | null>(
     null
   )
   const [error, setError] = useState("")
@@ -31,12 +35,17 @@ export function SessionPanel() {
       if (response.ok === false) {
         setError(response.error)
         setFeedbackItems([])
+        setCaptureStatus(null)
       } else {
         setState(response.value)
         setError("")
 
         if (response.value.kind === "active-session") {
-          const [feedbackResponse, jiraIssuesResponse] = await Promise.all([
+          const [
+            feedbackResponse,
+            jiraIssuesResponse,
+            captureStatusResponse
+          ] = await Promise.all([
             sendRuntimeMessage<FeedbackItem[]>({
               type: "bugbash:list-preview-feedback",
               sessionId: response.value.session.id
@@ -45,6 +54,9 @@ export function SessionPanel() {
               type: "bugbash:list-jira-issues",
               jiraOrg: response.value.session.jiraOrg,
               jiraIssueKey: response.value.session.jiraIssueKey
+            }),
+            sendRuntimeMessage<CaptureStatus>({
+              type: "bugbash:get-capture-status"
             })
           ])
 
@@ -54,10 +66,14 @@ export function SessionPanel() {
           if (!cancelled && jiraIssuesResponse.ok) {
             setJiraIssues(jiraIssuesResponse.value)
           }
+          if (!cancelled && captureStatusResponse.ok) {
+            setCaptureStatus(captureStatusResponse.value)
+          }
         } else {
           setFeedbackItems([])
           setJiraIssues([])
           setSelectedFeedbackId(null)
+          setCaptureStatus(null)
         }
       }
     }
@@ -95,6 +111,12 @@ export function SessionPanel() {
           <span className={styles["bugbash--session-panel__muted"]}>
             {state.session.targetUrl}
           </span>
+          {captureStatus ? (
+            <div className={styles["bugbash--session-panel__capture-status"]}>
+              <span>Capture: {captureStatus.kind}</span>
+              {captureStatus.error ? <span>{captureStatus.error}</span> : null}
+            </div>
+          ) : null}
           {selectedFeedback ? (
             <section className={styles["bugbash--session-panel__stack"]}>
               <button
