@@ -1,6 +1,7 @@
 import {
   cleanupGroupSession,
   handleRuntimeMessage,
+  reconcileTabCapture,
   refreshActiveTabBadge
 } from "~background/session-groups"
 import {
@@ -23,9 +24,14 @@ chrome.tabs.onActivated.addListener(() => {
   void refreshActiveTabBadge()
 })
 
-chrome.tabs.onUpdated.addListener((_tabId, changeInfo) => {
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.groupId !== undefined) {
+    void reconcileTabCapture(tabId)
+  }
+
   if (changeInfo.status === "complete") {
     void refreshActiveTabBadge()
+    void reconcileTabCapture(tabId)
   }
 })
 

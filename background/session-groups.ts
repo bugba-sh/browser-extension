@@ -436,7 +436,22 @@ export async function refreshActiveTabBadge(): Promise<void> {
   await updateBadgeForTab()
 }
 
+export async function reconcileTabCapture(tabId: number): Promise<void> {
+  const session = await getTabSession(tabId)
+
+  if (session) {
+    await startTabCapture(tabId)
+    return
+  }
+
+  await stopTabCapture(tabId)
+}
+
 export async function cleanupGroupSession(groupId: number): Promise<void> {
+  const session = await getSessionByGroupId(groupId)
+  if (session?.lastKnownTabId) {
+    await stopTabCapture(session.lastKnownTabId)
+  }
   await removeSessionByGroupId(groupId)
 }
 
