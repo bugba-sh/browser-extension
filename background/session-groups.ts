@@ -1,9 +1,11 @@
 import {
   createBugbashJiraIssue,
+  enrichBugbashJiraIssue,
   fetchBugbashJiraIssues
 } from "~src/session/jira-api"
 import {
   getTabCaptureStatus,
+  snapshotTabCapture,
   startTabCapture,
   stopTabCapture
 } from "~background/debugger-capture"
@@ -40,6 +42,11 @@ import {
   type RuntimeMessage,
   type RuntimeResponse
 } from "~src/session/types"
+import {
+  buildTelemetryArtifact,
+  createBugBashTimelineEvent
+} from "~src/session/telemetry"
+import { sanitizeTimelineEvents } from "~src/session/telemetry-redaction"
 
 function createSessionId(jiraOrg: string, jiraIssueKey: string): string {
   return `${jiraOrg}:${jiraIssueKey}:${Date.now()}`
@@ -305,11 +312,46 @@ async function createJiraIssue(
     jiraOrg: message.jiraOrg,
     jiraIssueKey: message.jiraIssueKey
   }
+  const activeTab = await getActiveTab()
+  const tabId = activeTab?.id ?? 0
+  const capture = snapshotTabCapture(tabId)
+  const timeline = capture.events.slice()
+
+  if (!message.screenshotDataUrl) {
+    timeline.push(
+      createBugBashTimelineEvent("warn", "Screenshot capture was unavailable.")
+    )
+  }
+
+  const sanitized = sanitizeTimelineEvents(timeline)
   const issue = await createBugbashJiraIssue({
     ...context,
     summary: message.summary,
     annotation: message.annotation
   })
+  const telemetry = buildTelemetryArtifact({
+    capture: {
+      id: `capture-${tabId}-${Date.now()}`,
+      sessionId: `${message.jiraOrg}:${message.jiraIssueKey}`,
+      tabId,
+      startedAt: capture.startedAt,
+      endedAt: capture.endedAt
+    },
+    page: message.page,
+    browser: message.browser,
+    annotation: message.annotation,
+    timeline: sanitized.events,
+    redactions: sanitized.redactions,
+    warnings: capture.warnings,
+    hasScreenshot: Boolean(message.screenshotDataUrl)
+  })
+
+  void enrichBugbashJiraIssue({
+    jiraOrg: message.jiraOrg,
+    issueKey: issue.issueKey,
+    telemetry,
+    screenshotDataUrl: message.screenshotDataUrl
+  }).catch(() => {})
 
   await appendCachedJiraIssue(context, issue)
   await updateBadgeForTab()
