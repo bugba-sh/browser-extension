@@ -10,6 +10,7 @@ export interface BugBashJiraIssue {
   summary: string
   annotation: FeedbackAnnotation
   status?: string
+  warnings?: string[]
 }
 
 export interface JiraIssueCache {

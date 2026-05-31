@@ -329,13 +329,14 @@ async function listJiraIssues(
 }
 
 async function createJiraIssue(
-  message: Extract<RuntimeMessage, { type: "bugbash:create-jira-issue" }>
+  message: Extract<RuntimeMessage, { type: "bugbash:create-jira-issue" }>,
+  sender?: chrome.runtime.MessageSender
 ): Promise<BugBashJiraIssue> {
   const context: JiraIssueContext = {
     jiraOrg: message.jiraOrg,
     jiraIssueKey: message.jiraIssueKey
   }
-  const activeTab = await getActiveTab()
+  const activeTab = sender?.tab ?? (await getActiveTab())
   const tabId = activeTab?.id ?? 0
   const capture = snapshotTabCapture(tabId)
   const timeline = capture.events.slice()
@@ -370,20 +371,24 @@ async function createJiraIssue(
     hasScreenshot: Boolean(message.screenshotDataUrl)
   })
 
-  void enrichBugbashJiraIssue({
+  const warnings = await enrichBugbashJiraIssue({
     jiraOrg: message.jiraOrg,
     issueKey: issue.issueKey,
     telemetry,
     screenshotDataUrl: message.screenshotDataUrl
-  }).catch(() => {})
+  })
+  const enrichedIssue: BugBashJiraIssue = {
+    ...issue,
+    ...(warnings.length > 0 ? { warnings } : {})
+  }
 
-  await appendCachedJiraIssue(context, issue)
+  await appendCachedJiraIssue(context, enrichedIssue)
   await updateBadgeForTab()
   void refreshJiraIssues(context)
     .then(() => updateBadgeForTab())
     .catch(() => {})
 
-  return issue
+  return enrichedIssue
 }
 
 export async function handleRuntimeMessage(
@@ -439,7 +444,7 @@ export async function handleRuntimeMessage(
       case "bugbash:create-jira-issue":
         return {
           ok: true,
-          value: await createJiraIssue(message)
+          value: await createJiraIssue(message, sender)
         }
       case "bugbash:resume-session":
         return { ok: true, value: await resumeSession(message.sessionId) }
