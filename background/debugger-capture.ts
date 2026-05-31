@@ -1,3 +1,4 @@
+import { createPngDataUrlFromBase64 } from "~src/session/screenshot"
 import {
   createBugBashTimelineEvent,
   TELEMETRY_LIMITS,
@@ -42,12 +43,12 @@ function pushEvent(
   }
 }
 
-async function sendCommand(
+async function sendCommand<T = unknown>(
   target: chrome.debugger.Debuggee,
   command: string,
   params?: Record<string, unknown>
-): Promise<void> {
-  await chrome.debugger.sendCommand(target, command, params)
+): Promise<T> {
+  return (await chrome.debugger.sendCommand(target, command, params)) as T
 }
 
 export async function startTabCapture(tabId: number): Promise<CaptureStatus> {
@@ -84,6 +85,7 @@ export async function startTabCapture(tabId: number): Promise<CaptureStatus> {
     await sendCommand(target, "Network.enable")
     await sendCommand(target, "Runtime.enable")
     await sendCommand(target, "Log.enable")
+    await sendCommand(target, "Page.enable")
 
     state.status = {
       kind: "active",
@@ -112,6 +114,28 @@ export async function startTabCapture(tabId: number): Promise<CaptureStatus> {
     )
     return state.status
   }
+}
+
+export async function captureTabScreenshot(tabId: number): Promise<string> {
+  const state = captureByTabId.get(tabId)
+  if (!state || state.status.kind !== "active") {
+    throw new Error("Debugger capture is not active for this tab.")
+  }
+
+  const result = await sendCommand<{ data?: string }>(
+    state.target,
+    "Page.captureScreenshot",
+    {
+      format: "png",
+      fromSurface: true
+    }
+  )
+
+  if (!result.data) {
+    throw new Error("Debugger screenshot capture returned no data.")
+  }
+
+  return createPngDataUrlFromBase64(result.data)
 }
 
 export async function stopTabCapture(tabId: number): Promise<void> {

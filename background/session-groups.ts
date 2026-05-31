@@ -1,5 +1,6 @@
 import { captureVisibleTabScreenshot } from "~background/capture-visible-tab"
 import {
+  captureTabScreenshot,
   getTabCaptureStatus,
   snapshotTabCapture,
   startTabCapture,
@@ -240,13 +241,39 @@ async function openSidePanel(tabId?: number): Promise<void> {
 async function captureVisibleTab(
   sender?: chrome.runtime.MessageSender
 ): Promise<string> {
-  const windowId = sender?.tab?.windowId ?? (await getActiveTab())?.windowId
+  const activeTab = sender?.tab ?? (await getActiveTab())
+  const windowId = activeTab?.windowId
+  let visibleTabError: unknown
 
   if (!windowId) {
     throw new Error("No active window is available for screenshot capture.")
   }
 
-  return captureVisibleTabScreenshot(windowId)
+  try {
+    return await captureVisibleTabScreenshot(windowId)
+  } catch (error) {
+    visibleTabError = error
+  }
+
+  if (typeof activeTab?.id === "number") {
+    try {
+      return await captureTabScreenshot(activeTab.id)
+    } catch (debuggerError) {
+      throw new Error(
+        `Screenshot capture failed: ${String(
+          (visibleTabError as Error)?.message ?? visibleTabError
+        )}; debugger fallback failed: ${String(
+          (debuggerError as Error)?.message ?? debuggerError
+        )}`
+      )
+    }
+  }
+
+  throw new Error(
+    `Screenshot capture failed: ${String(
+      (visibleTabError as Error)?.message ?? visibleTabError
+    )}`
+  )
 }
 
 async function endSession(sessionId: string): Promise<void> {
