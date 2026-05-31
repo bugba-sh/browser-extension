@@ -1,14 +1,14 @@
 import {
-  normalizeDebuggerEvent,
-  type DebuggerEventPayload,
-  type PendingNetworkRequest
-} from "~src/session/telemetry-normalization"
-import {
   createBugBashTimelineEvent,
   TELEMETRY_LIMITS,
   type CaptureStatus,
   type TelemetryTimelineEvent
 } from "~src/session/telemetry"
+import {
+  normalizeDebuggerEvent,
+  type DebuggerEventPayload,
+  type PendingNetworkRequest
+} from "~src/session/telemetry-normalization"
 
 interface TabCaptureState {
   tabId: number
@@ -29,7 +29,10 @@ function getTarget(tabId: number): chrome.debugger.Debuggee {
   return { tabId }
 }
 
-function pushEvent(state: TabCaptureState, event: TelemetryTimelineEvent): void {
+function pushEvent(
+  state: TabCaptureState,
+  event: TelemetryTimelineEvent
+): void {
   state.events.push(event)
   if (state.events.length > TELEMETRY_LIMITS.maxTimelineEvents) {
     state.events.splice(
@@ -62,13 +65,17 @@ export async function startTabCapture(tabId: number): Promise<CaptureStatus> {
     tabId,
     updatedAt: now()
   }
-  const state: TabCaptureState = {
+  const state: TabCaptureState = existing ?? {
     tabId,
     target,
     status,
     events: [],
     pendingRequests: new Map()
   }
+
+  state.target = target
+  state.status = status
+  state.pendingRequests.clear()
 
   captureByTabId.set(tabId, state)
 
@@ -110,6 +117,15 @@ export async function startTabCapture(tabId: number): Promise<CaptureStatus> {
 export async function stopTabCapture(tabId: number): Promise<void> {
   const state = captureByTabId.get(tabId)
   if (!state) {
+    return
+  }
+
+  if (
+    state.status.kind !== "active" &&
+    state.status.kind !== "attaching" &&
+    state.status.kind !== "detaching"
+  ) {
+    captureByTabId.delete(tabId)
     return
   }
 
@@ -197,7 +213,10 @@ export function handleDebuggerEvent(
   }
 
   const event = normalizeDebuggerEvent(
-    { method, params: params as Record<string, unknown> } satisfies DebuggerEventPayload,
+    {
+      method,
+      params: params as Record<string, unknown>
+    } satisfies DebuggerEventPayload,
     state.pendingRequests
   )
 
@@ -225,5 +244,9 @@ export function handleDebuggerDetach(
     updatedAt: now(),
     error: reason
   }
-  captureByTabId.delete(source.tabId)
+  state.pendingRequests.clear()
+  pushEvent(
+    state,
+    createBugBashTimelineEvent("warn", `Debugger capture detached: ${reason}`)
+  )
 }

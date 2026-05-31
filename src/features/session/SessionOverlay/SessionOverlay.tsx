@@ -358,7 +358,7 @@ export function SessionOverlay() {
     setIsSubmitting(true)
     setSubmitError("")
 
-    const { page, browser } = collectPageMetadata()
+    const { page, browser, environment } = collectPageMetadata()
     let screenshotDataUrl: string | undefined
 
     if (pendingPoint) {
@@ -405,6 +405,7 @@ export function SessionOverlay() {
       },
       page,
       browser,
+      environment,
       ...(screenshotDataUrl ? { screenshotDataUrl } : {})
     })
 

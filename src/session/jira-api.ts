@@ -1,4 +1,5 @@
 import type { FeedbackAnnotation } from "./feedback"
+import { buildDescriptionDocument } from "./jira-enrichment"
 import {
   BUGBASH_ANNOTATION_PROPERTY_KEY,
   getIssueApiUrl,
@@ -50,22 +51,6 @@ interface JiraAttachment {
   mimeType?: string
 }
 
-type AdfTextNode = {
-  type: "text"
-  text: string
-}
-
-type AdfParagraph = {
-  type: "paragraph"
-  content: AdfTextNode[]
-}
-
-type AdfDocument = {
-  type: "doc"
-  version: 1
-  content: AdfParagraph[]
-}
-
 export interface CreateBugbashJiraIssueInput extends JiraIssueContext {
   summary: string
   annotation: FeedbackAnnotation
@@ -104,17 +89,6 @@ async function fetchJson<T>(url: string, init: RequestInit): Promise<T> {
 
   await assertOk(response, "Jira request failed")
   return (await response.json()) as T
-}
-
-function createTextDocument(lines: string[]): AdfDocument {
-  return {
-    type: "doc",
-    version: 1,
-    content: lines.map((line) => ({
-      type: "paragraph",
-      content: line ? [{ type: "text", text: line }] : []
-    }))
-  }
 }
 
 function dataUrlToBlob(dataUrl: string): Blob {
@@ -342,14 +316,11 @@ export async function enrichBugbashJiraIssue({
 
   try {
     await updateIssueFields(jiraOrg, issueKey, {
-      description: createTextDocument([
-        `BugBash feedback captured on ${telemetry.page.url}`,
-        `Browser: ${telemetry.browser.name} ${telemetry.browser.version}`.trim(),
-        `OS: ${telemetry.browser.os}`,
-        `Viewport: ${telemetry.page.viewport.width}x${telemetry.page.viewport.height}`,
-        `Telemetry events: ${telemetry.timeline.length}`,
-        screenshotDataUrl ? "Screenshot attached." : "Screenshot unavailable."
-      ])
+      description: buildDescriptionDocument({
+        telemetryEvents: telemetry.timeline.length,
+        screenshotAttached: Boolean(screenshotDataUrl),
+        environment: telemetry.environment
+      })
     })
   } catch (error) {
     warnings.push(

@@ -10,6 +10,10 @@ export interface CaptureAnnotatedScreenshotOptions {
   captureVisibleTab: () => Promise<string>
 }
 
+export function createPngDataUrlFromBase64(payload: string): string {
+  return `data:image/png;base64,${payload}`
+}
+
 function waitForNextPaint(): Promise<void> {
   return new Promise((resolve) => {
     window.requestAnimationFrame(() => resolve())

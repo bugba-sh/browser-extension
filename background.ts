@@ -1,19 +1,19 @@
 import {
+  handleDebuggerDetach,
+  handleDebuggerEvent,
+  stopTabCapture
+} from "~background/debugger-capture"
+import {
   cleanupGroupSession,
   handleRuntimeMessage,
   reconcileTabCapture,
   refreshActiveTabBadge
 } from "~background/session-groups"
-import {
-  handleDebuggerDetach,
-  handleDebuggerEvent,
-  stopTabCapture
-} from "~background/debugger-capture"
 import type { RuntimeMessage } from "~src/session/types"
 
 chrome.runtime.onMessage.addListener(
-  (message: RuntimeMessage, _sender, sendResponse) => {
-    void handleRuntimeMessage(message).then(sendResponse)
+  (message: RuntimeMessage, sender, sendResponse) => {
+    void handleRuntimeMessage(message, sender).then(sendResponse)
     return true
   }
 )

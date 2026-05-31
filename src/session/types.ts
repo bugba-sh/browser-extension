@@ -1,5 +1,9 @@
 import type { CreatePreviewFeedbackInput, FeedbackAnnotation } from "./feedback"
-import type { BrowserMetadata, PageMetadata } from "./telemetry"
+import type {
+  BrowserMetadata,
+  EnvironmentMetadata,
+  PageMetadata
+} from "./telemetry"
 
 export const BUGBASH_WEB_URL = "https://bugba.sh"
 export const BUGBASH_GROUP_TITLE_PREFIX = "BugBash"
@@ -103,6 +107,7 @@ export type RuntimeMessage =
       annotation: FeedbackAnnotation
       page: PageMetadata
       browser: BrowserMetadata
+      environment: EnvironmentMetadata
       screenshotDataUrl?: string
     }
   | {

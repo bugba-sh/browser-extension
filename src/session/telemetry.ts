@@ -55,6 +55,30 @@ export interface BrowserMetadata {
   userAgent: string
 }
 
+export interface EnvironmentMetadata {
+  capturedAt: string
+  url: string
+  title: string
+  referrer: string
+  browserName: string
+  browserVersion: string
+  osName: string
+  osVersion: string
+  device: string
+  platform: string
+  viewportWidth: number
+  viewportHeight: number
+  screenWidth: number
+  screenHeight: number
+  availScreenWidth: number
+  availScreenHeight: number
+  pixelDensity: number
+  locale: string
+  language: string
+  timezone: string
+  userAgent: string
+}
+
 export interface CaptureMetadata {
   id: string
   sessionId: string
@@ -112,6 +136,7 @@ export interface TelemetryArtifact {
   capture: CaptureMetadata
   page: PageMetadata
   browser: BrowserMetadata
+  environment: EnvironmentMetadata
   annotation: FeedbackAnnotation
   timeline: TelemetryTimelineEvent[]
   attachments: {
@@ -129,6 +154,7 @@ export interface BuildTelemetryArtifactInput {
   capture: CaptureMetadata
   page: PageMetadata
   browser: BrowserMetadata
+  environment: EnvironmentMetadata
   annotation: FeedbackAnnotation
   timeline: TelemetryTimelineEvent[]
   redactions: TelemetryRedactions
@@ -153,6 +179,7 @@ export function buildTelemetryArtifact({
   capture,
   page,
   browser,
+  environment,
   annotation,
   timeline,
   redactions,
@@ -164,6 +191,7 @@ export function buildTelemetryArtifact({
     capture,
     page,
     browser,
+    environment,
     annotation,
     timeline: timeline
       .slice()

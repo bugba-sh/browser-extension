@@ -1,14 +1,15 @@
-import {
-  createBugbashJiraIssue,
-  enrichBugbashJiraIssue,
-  fetchBugbashJiraIssues
-} from "~src/session/jira-api"
+import { captureVisibleTabScreenshot } from "~background/capture-visible-tab"
 import {
   getTabCaptureStatus,
   snapshotTabCapture,
   startTabCapture,
   stopTabCapture
 } from "~background/debugger-capture"
+import {
+  createBugbashJiraIssue,
+  enrichBugbashJiraIssue,
+  fetchBugbashJiraIssues
+} from "~src/session/jira-api"
 import {
   appendCachedJiraIssue,
   getCachedJiraIssues,
@@ -32,6 +33,11 @@ import {
   saveSession
 } from "~src/session/storage"
 import {
+  buildTelemetryArtifact,
+  createBugBashTimelineEvent
+} from "~src/session/telemetry"
+import { sanitizeTimelineEvents } from "~src/session/telemetry-redaction"
+import {
   BUGBASH_GROUP_COLOR,
   BUGBASH_GROUP_TITLE_PREFIX,
   BUGBASH_WEB_URL,
@@ -42,11 +48,6 @@ import {
   type RuntimeMessage,
   type RuntimeResponse
 } from "~src/session/types"
-import {
-  buildTelemetryArtifact,
-  createBugBashTimelineEvent
-} from "~src/session/telemetry"
-import { sanitizeTimelineEvents } from "~src/session/telemetry-redaction"
 
 function createSessionId(jiraOrg: string, jiraIssueKey: string): string {
   return `${jiraOrg}:${jiraIssueKey}:${Date.now()}`
@@ -236,21 +237,16 @@ async function openSidePanel(tabId?: number): Promise<void> {
   }
 }
 
-async function captureVisibleTab(): Promise<string> {
-  const tab = await getActiveTab()
-  if (!tab?.windowId) {
+async function captureVisibleTab(
+  sender?: chrome.runtime.MessageSender
+): Promise<string> {
+  const windowId = sender?.tab?.windowId ?? (await getActiveTab())?.windowId
+
+  if (!windowId) {
     throw new Error("No active window is available for screenshot capture.")
   }
 
-  const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
-    format: "png"
-  })
-
-  if (!dataUrl) {
-    throw new Error("Screenshot capture returned no data.")
-  }
-
-  return dataUrl
+  return captureVisibleTabScreenshot(windowId)
 }
 
 async function endSession(sessionId: string): Promise<void> {
@@ -339,6 +335,7 @@ async function createJiraIssue(
     },
     page: message.page,
     browser: message.browser,
+    environment: message.environment,
     annotation: message.annotation,
     timeline: sanitized.events,
     redactions: sanitized.redactions,
@@ -363,7 +360,8 @@ async function createJiraIssue(
 }
 
 export async function handleRuntimeMessage(
-  message: RuntimeMessage
+  message: RuntimeMessage,
+  sender?: chrome.runtime.MessageSender
 ): Promise<RuntimeResponse> {
   try {
     switch (message.type) {
@@ -394,7 +392,7 @@ export async function handleRuntimeMessage(
       case "bugbash:capture-visible-tab":
         return {
           ok: true,
-          value: await captureVisibleTab()
+          value: await captureVisibleTab(sender)
         }
       case "bugbash:list-preview-feedback":
         return {
